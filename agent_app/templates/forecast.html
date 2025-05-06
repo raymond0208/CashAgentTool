@@ -1,0 +1,231 @@
+{% extends "layout.html" %}
+
+{% block title %}Cash Flow Forecast{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Cash Flow Forecast</h1>
+    
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="forecast-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="day30-tab" data-bs-toggle="tab" href="#day30">30 Days</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="day90-tab" data-bs-toggle="tab" href="#day90">90 Days</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="day180-tab" data-bs-toggle="tab" href="#day180">180 Days</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="forecast-content">
+                        <div class="tab-pane fade show active" id="day30">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>30-Day Forecast</h5>
+                                <button class="btn btn-primary btn-sm" onclick="generateForecast(30)">
+                                    Generate Forecast
+                                </button>
+                            </div>
+                            <div id="loading-30" class="d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Generating forecast...</span>
+                            </div>
+                            <div id="forecast-result-30" class="mt-3"></div>
+                        </div>
+                        <div class="tab-pane fade" id="day90">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>90-Day Forecast</h5>
+                                <button class="btn btn-primary btn-sm" onclick="generateForecast(90)">
+                                    Generate Forecast
+                                </button>
+                            </div>
+                            <div id="loading-90" class="d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Generating forecast...</span>
+                            </div>
+                            <div id="forecast-result-90" class="mt-3"></div>
+                        </div>
+                        <div class="tab-pane fade" id="day180">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>180-Day Forecast</h5>
+                                <button class="btn btn-primary btn-sm" onclick="generateForecast(180)">
+                                    Generate Forecast
+                                </button>
+                            </div>
+                            <div id="loading-180" class="d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Generating forecast...</span>
+                            </div>
+                            <div id="forecast-result-180" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5>All Forecasts</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="generateAllForecasts()">
+                        Generate All Forecasts
+                    </button>
+                    <div id="loading-all" class="d-none mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Generating all forecasts...</span>
+                    </div>
+                    <div id="all-forecasts-result" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Function to format the forecast result
+function formatForecast(forecast) {
+    if (!forecast || forecast.error) {
+        return `<div class="alert alert-danger">Error: ${forecast.error || 'Unknown error'}</div>`;
+    }
+    
+    const metadata = forecast.metadata || {};
+    let html = `
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <strong>Forecast Period:</strong> ${metadata.forecast_start || 'N/A'} to ${metadata.forecast_end || 'N/A'}
+                <br>
+                <strong>Current Balance:</strong> $${metadata.current_balance ? metadata.current_balance.toFixed(2) : 'N/A'}
+            </div>
+            <div class="card-body">
+                <pre class="forecast-text">${forecast.forecast_text}</pre>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// Function to generate a forecast for a specific period
+async function generateForecast(days) {
+    const loadingElement = document.getElementById(`loading-${days}`);
+    const resultElement = document.getElementById(`forecast-result-${days}`);
+    
+    // Show loading indicator
+    loadingElement.classList.remove('d-none');
+    resultElement.innerHTML = '';
+    
+    try {
+        const response = await fetch(`/api/forecast/${days}`);
+        const data = await response.json();
+        
+        // Format and display the result
+        resultElement.innerHTML = formatForecast(data);
+    } catch (error) {
+        resultElement.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    } finally {
+        // Hide loading indicator
+        loadingElement.classList.add('d-none');
+    }
+}
+
+// Function to generate all forecasts
+async function generateAllForecasts() {
+    const loadingElement = document.getElementById('loading-all');
+    const resultElement = document.getElementById('all-forecasts-result');
+    
+    // Show loading indicator
+    loadingElement.classList.remove('d-none');
+    resultElement.innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/forecast/all');
+        const data = await response.json();
+        
+        // Format and display all results
+        let html = '<div class="accordion" id="forecastAccordion">';
+        
+        // 30-day forecast
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading30">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse30">
+                        30-Day Forecast
+                    </button>
+                </h2>
+                <div id="collapse30" class="accordion-collapse collapse show" aria-labelledby="heading30" data-bs-parent="#forecastAccordion">
+                    <div class="accordion-body">
+                        ${formatForecast(data['30_days'])}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 90-day forecast
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading90">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse90">
+                        90-Day Forecast
+                    </button>
+                </h2>
+                <div id="collapse90" class="accordion-collapse collapse" aria-labelledby="heading90" data-bs-parent="#forecastAccordion">
+                    <div class="accordion-body">
+                        ${formatForecast(data['90_days'])}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 180-day forecast
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading180">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse180">
+                        180-Day Forecast
+                    </button>
+                </h2>
+                <div id="collapse180" class="accordion-collapse collapse" aria-labelledby="heading180" data-bs-parent="#forecastAccordion">
+                    <div class="accordion-body">
+                        ${formatForecast(data['180_days'])}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        html += '</div>';
+        resultElement.innerHTML = html;
+    } catch (error) {
+        resultElement.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    } finally {
+        // Hide loading indicator
+        loadingElement.classList.add('d-none');
+    }
+}
+</script>
+
+<style>
+.forecast-text {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

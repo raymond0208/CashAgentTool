@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+
+{% block title %}Home - Cash Flow Agent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="px-4 py-5 my-5 text-center">
+        <h1 class="display-5 fw-bold text-body-emphasis">Cash Flow Agent</h1>
+        <div class="col-lg-6 mx-auto">
+            <p class="lead mb-4">
+                Your intelligent financial assistant powered by AI. Analyze, forecast, and optimize your cash flow with powerful analytics tools.
+            </p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="/forecast" class="btn btn-primary btn-lg px-4 gap-3">View Forecast</a>
+                <a href="/transactions" class="btn btn-outline-secondary btn-lg px-4">My Transactions</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 py-4 row-cols-1 row-cols-md-3">
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-bar-chart-line"></i>
+                    </div>
+                    <h5 class="card-title">Cash Flow Forecast</h5>
+                    <p class="card-text">Predict your future cash flow based on historical data and recurring transactions.</p>
+                    <a href="/forecast" class="btn btn-outline-primary">View Forecast</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <h5 class="card-title">Pattern Analysis</h5>
+                    <p class="card-text">Discover spending patterns and trends in your financial transactions.</p>
+                    <a href="/patterns" class="btn btn-outline-primary">Analyze Patterns</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <h5 class="card-title">Runway Calculation</h5>
+                    <p class="card-text">Calculate how long your current cash will last at your current spending rate.</p>
+                    <a href="/runway" class="btn btn-outline-primary">Calculate Runway</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 py-4 row-cols-1 row-cols-md-3">
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <h5 class="card-title">Financing Modeling</h5>
+                    <p class="card-text">Model the impact of different financing options on your cash flow.</p>
+                    <a href="/financing" class="btn btn-outline-primary">Explore Financing</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <h5 class="card-title">What-if Analysis</h5>
+                    <p class="card-text">Simulate changes to your income and expenses to see potential outcomes.</p>
+                    <a href="/whatif" class="btn btn-outline-primary">Run Scenarios</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col d-flex align-items-stretch">
+            <div class="card dashboard-card w-100">
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-list-ul"></i>
+                    </div>
+                    <h5 class="card-title">Transactions</h5>
+                    <p class="card-text">View and manage your transaction history and financial records.</p>
+                    <a href="/transactions" class="btn btn-outline-primary">View Transactions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
