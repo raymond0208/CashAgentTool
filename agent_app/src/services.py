@@ -108,7 +108,7 @@ class FinancialAnalysis:
 
         return recurring
 
-    def _call_llm(self, prompt, max_tokens=1000, tools=None):
+    def _call_llm(self, prompt, max_tokens=4000, tools=None):
         """Utility method for calling Claude with proper error handling"""
         if not self.api_key:
             return {"error": "API key not configured"}

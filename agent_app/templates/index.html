@@ -1,102 +1,92 @@
 {% extends "layout.html" %}
 
-{% block title %}Home - Cash Flow Agent{% endblock %}
+{% block title %}Dashboard - Cash Flow Agent{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="px-4 py-5 my-5 text-center">
-        <h1 class="display-5 fw-bold text-body-emphasis">Cash Flow Agent</h1>
-        <div class="col-lg-6 mx-auto">
-            <p class="lead mb-4">
-                Your intelligent financial assistant powered by AI. Analyze, forecast, and optimize your cash flow with powerful analytics tools.
-            </p>
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="/forecast" class="btn btn-primary btn-lg px-4 gap-3">View Forecast</a>
-                <a href="/transactions" class="btn btn-outline-secondary btn-lg px-4">My Transactions</a>
-            </div>
-        </div>
-    </div>
+<div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p class="text-muted">Welcome to your financial command center.</p>
+</div>
 
-    <div class="row g-4 py-4 row-cols-1 row-cols-md-3">
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-bar-chart-line"></i>
-                    </div>
-                    <h5 class="card-title">Cash Flow Forecast</h5>
-                    <p class="card-text">Predict your future cash flow based on historical data and recurring transactions.</p>
-                    <a href="/forecast" class="btn btn-outline-primary">View Forecast</a>
-                </div>
-            </div>
+<!-- KPI Stats -->
+<div class="kpi-cards">
+    <div class="kpi-card">
+        <div class="kpi-card-title">
+            Total Revenue
+            <i class="bi bi-currency-dollar"></i>
         </div>
-        
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-search"></i>
-                    </div>
-                    <h5 class="card-title">Pattern Analysis</h5>
-                    <p class="card-text">Discover spending patterns and trends in your financial transactions.</p>
-                    <a href="/patterns" class="btn btn-outline-primary">Analyze Patterns</a>
-                </div>
-            </div>
+        <div class="kpi-card-value">$45,231</div>
+        <div class="kpi-card-trend positive">+12.3% from last month</div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-card-title">
+            Cash Flow
+            <i class="bi bi-graph-up-arrow"></i>
         </div>
-        
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                    <h5 class="card-title">Runway Calculation</h5>
-                    <p class="card-text">Calculate how long your current cash will last at your current spending rate.</p>
-                    <a href="/runway" class="btn btn-outline-primary">Calculate Runway</a>
-                </div>
-            </div>
+        <div class="kpi-card-value">$15,032</div>
+        <div class="kpi-card-trend positive">+8.1% from last month</div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-card-title">
+            Expenses
+            <i class="bi bi-receipt"></i>
+        </div>
+        <div class="kpi-card-value">$28,743</div>
+        <div class="kpi-card-trend negative">-2.5% from last month</div>
+    </div>
+    
+    <div class="kpi-card">
+        <div class="kpi-card-title">
+            Profit Margin
+            <i class="bi bi-percent"></i>
+        </div>
+        <div class="kpi-card-value">24.7%</div>
+        <div class="kpi-card-trend positive">+5.2% from last month</div>
+    </div>
+</div>
+
+<!-- Chart Cards -->
+<div class="chart-cards">
+    <div class="chart-card">
+        <div class="chart-card-title">Revenue Overview</div>
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
         </div>
     </div>
     
-    <div class="row g-4 py-4 row-cols-1 row-cols-md-3">
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-cash-coin"></i>
-                    </div>
-                    <h5 class="card-title">Financing Modeling</h5>
-                    <p class="card-text">Model the impact of different financing options on your cash flow.</p>
-                    <a href="/financing" class="btn btn-outline-primary">Explore Financing</a>
-                </div>
-            </div>
+    <div class="chart-card">
+        <div class="chart-card-title">Expense Breakdown</div>
+        <div class="chart-container">
+            <canvas id="expenseChart"></canvas>
         </div>
-        
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-gear"></i>
-                    </div>
-                    <h5 class="card-title">What-if Analysis</h5>
-                    <p class="card-text">Simulate changes to your income and expenses to see potential outcomes.</p>
-                    <a href="/whatif" class="btn btn-outline-primary">Run Scenarios</a>
-                </div>
-            </div>
+    </div>
+    
+    <div class="chart-card">
+        <div class="chart-card-title">Cash Flow Forecast</div>
+        <div class="chart-container">
+            <canvas id="cashFlowChart"></canvas>
         </div>
-        
-        <div class="col d-flex align-items-stretch">
-            <div class="card dashboard-card w-100">
-                <div class="card-body text-center">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-list-ul"></i>
-                    </div>
-                    <h5 class="card-title">Transactions</h5>
-                    <p class="card-text">View and manage your transaction history and financial records.</p>
-                    <a href="/transactions" class="btn btn-outline-primary">View Transactions</a>
-                </div>
-            </div>
+    </div>
+</div>
+
+<!-- AI Assistant -->
+<div class="ai-assistant">
+    <div class="ai-assistant-header">
+        <div class="ai-assistant-icon">
+            <i class="bi bi-robot"></i>
         </div>
+        <h3 class="ai-assistant-title">Financial AI Assistant</h3>
+    </div>
+    <div class="ai-assistant-message">
+        Hello! I'm your financial AI assistant. How can I help you analyze your business finances today?
+    </div>
+    <div class="ai-input-container">
+        <input type="text" class="ai-input" placeholder="Ask about your finances...">
+        <button class="ai-submit">
+            <i class="bi bi-send"></i>
+        </button>
     </div>
 </div>
 {% endblock %}
