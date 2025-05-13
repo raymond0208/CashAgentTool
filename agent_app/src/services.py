@@ -1,8 +1,11 @@
 import anthropic
 import os
 import json
+import uuid
+import base64
 from datetime import datetime, timedelta
-from .models import Transaction, InitialBalance, db
+from werkzeug.utils import secure_filename
+from .models import Transaction, InitialBalance, ReceiptDetail, ReceiptItem, db
 
 class FinancialAnalysis:
     """Base class for all financial analysis agent functions"""
@@ -339,9 +342,207 @@ class CashFlowForecast(FinancialAnalysis):
             }
 
     def forecast_periods(self):
-        """Generate forecasts for 30,90 and 180 days"""
+        """Generate forecasts for 30, 90, and 180 day periods"""
         return {
-            "30_days": self.forecast(30),
-            "90_days": self.forecast(90),
-            "180_days": self.forecast(180)  
+            "30d": self.forecast(days=30),
+            "90d": self.forecast(days=90),
+            "180d": self.forecast(days=180)
         }
+
+class ReceiptExtraction:
+    """Service class for extracting data from receipt images using AI"""
+    
+    def __init__(self, user_id=1):
+        self.user_id = user_id
+        self.api_key = "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" or os.environ.get("ANTHROPIC_API_KEY")
+        self.model = "claude-3-opus-20240229"
+        self.client = anthropic.Anthropic(api_key=self.api_key)
+        self.allowed_extensions = {'jpg', 'jpeg', 'png'}
+        self.upload_folder = os.path.join('agent_app', 'static', 'image', 'receipts')
+        
+        # Create upload folder if it doesn't exist
+        os.makedirs(self.upload_folder, exist_ok=True)
+    
+    def allowed_file(self, filename):
+        """Check if the file has an allowed extension"""
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in self.allowed_extensions
+    
+    def extract_receipt_details(self, image_file):
+        """Extract details from a receipt image using AI"""
+        # Check if file is allowed
+        if not image_file or not self.allowed_file(image_file.filename):
+            return {"status": "error", "message": "Invalid file type. Only JPG, JPEG, and PNG files are allowed."}
+        
+        try:
+            # Save the image file
+            file_path, image_url = self._save_image(image_file)
+            
+            # Convert image to base64 for the AI model
+            with open(file_path, "rb") as img_file:
+                base64_image = base64.b64encode(img_file.read()).decode("utf-8")
+            
+            # Call the AI model
+            ai_response = self._call_ai_model(file_path, base64_image)
+            
+            # Parse the JSON response
+            try:
+                extracted_data = json.loads(ai_response)
+                
+                # Provide default values for any missing required fields
+                default_values = {
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'currency': 'USD',
+                    'vendor_name': 'Unknown Vendor',
+                    'receipt_items': [],
+                    'tax': 0.0,
+                    'total': 0.0
+                }
+                
+                # Apply defaults for missing fields
+                for field, default_value in default_values.items():
+                    if field not in extracted_data:
+                        print(f"Warning: Missing field '{field}' in AI response. Using default value.")
+                        extracted_data[field] = default_value
+                
+                # Make sure receipt_items is a list, even if empty
+                if not isinstance(extracted_data['receipt_items'], list):
+                    extracted_data['receipt_items'] = []
+                
+                # Ensure numeric fields are numbers
+                for field in ['tax', 'total']:
+                    if not isinstance(extracted_data[field], (int, float)):
+                        try:
+                            extracted_data[field] = float(extracted_data[field])
+                        except (ValueError, TypeError):
+                            extracted_data[field] = 0.0
+                
+                # Process each receipt item to ensure it has the required fields
+                for item in extracted_data['receipt_items']:
+                    if 'item_name' not in item:
+                        item['item_name'] = 'Unnamed Item'
+                    if 'item_cost' not in item:
+                        item['item_cost'] = 0.0
+                    elif not isinstance(item['item_cost'], (int, float)):
+                        try:
+                            item['item_cost'] = float(item['item_cost'])
+                        except (ValueError, TypeError):
+                            item['item_cost'] = 0.0
+                
+                # Save to database
+                receipt = ReceiptDetail(
+                    user_id=self.user_id,
+                    date=extracted_data['date'],
+                    currency=extracted_data['currency'],
+                    vendor_name=extracted_data['vendor_name'],
+                    tax=extracted_data['tax'],
+                    total=extracted_data['total'],
+                    image_url=image_url
+                )
+                
+                db.session.add(receipt)
+                db.session.flush()  # To get the receipt ID before committing
+                
+                # Add receipt items
+                for item_data in extracted_data['receipt_items']:
+                    item = ReceiptItem(
+                        receipt_id=receipt.id,
+                        item_name=item_data['item_name'],
+                        item_cost=item_data['item_cost']
+                    )
+                    db.session.add(item)
+                
+                db.session.commit()
+                
+                # Return the saved receipt data
+                return {
+                    "status": "success",
+                    "data": receipt.to_dict()
+                }
+                
+            except json.JSONDecodeError:
+                return {"status": "error", "message": "Invalid JSON response from AI model"}
+            
+        except Exception as e:
+            db.session.rollback()
+            return {"status": "error", "message": f"Error processing receipt: {str(e)}"}
+
+    # Add this method to your ReceiptExtraction class in services.py
+    def _save_image(self, image_file):
+        """Save the image file and return the paths"""
+        filename = secure_filename(f"{uuid.uuid4()}_{image_file.filename}")
+        file_path = os.path.join(self.upload_folder, filename)
+        image_file.save(file_path)
+        image_url = f"/static/image/receipts/{filename}"
+        return file_path, image_url
+
+    # Add this method to your ReceiptExtraction class in services.py
+    def _call_ai_model(self, file_path, base64_image):
+        """Call the AI model with the image"""
+        # Create prompt for AI extraction
+        prompt = """
+        You are an expert receipt scanner. I'll provide you with an image of a receipt.
+        Extract and return ONLY the following information in valid JSON format:
+        
+        1. Date (in YYYY-MM-DD format)
+        2. Currency (3-character currency code like USD, CAD, EUR)
+        3. Vendor name (company/store name)
+        4. Receipt items (array of objects with item_name and item_cost as a number)
+        5. GST/tax amount (for the entire receipt, as a number) - This MUST be returned as "tax" in your JSON
+        6. Total amount (as a number)
+        
+        If any information is not visible or unclear, provide a reasonable default value.
+        If you can't determine the currency, use "USD".
+        If tax/GST is not visible, set it to 0.
+        
+        Your response MUST be in this exact format:
+        
+        {
+            "date": "YYYY-MM-DD",
+            "currency": "USD",
+            "vendor_name": "Store Name",
+            "receipt_items": [
+                {
+                    "item_name": "Item 1",
+                    "item_cost": 11.11
+                },
+                {
+                    "item_name": "Item 2",
+                    "item_cost": 22.22
+                }
+            ],
+            "tax": 12.34,
+            "total": 567.89
+        }
+        
+        Return ONLY the extracted JSON data without any explanation or additional text.
+        """
+        
+        # Call Claude Vision API
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=4000,
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": base64_image
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+        
+        # Extract content from the response
+        return response.content[0].text

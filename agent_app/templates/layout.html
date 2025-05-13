@@ -40,6 +40,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/receipt-extractor' %}active{% endif %}" href="/receipt-extractor">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Receipt Extractor
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.path == '/revenue-analysis' %}active{% endif %}" href="/revenue-analysis">
                         <i class="bi bi-bar-chart"></i>
                         Revenue Analysis

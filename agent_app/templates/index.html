@@ -15,8 +15,10 @@
             Total Revenue
             <i class="bi bi-currency-dollar"></i>
         </div>
-        <div class="kpi-card-value">$45,231</div>
-        <div class="kpi-card-trend positive">+12.3% from last month</div>
+        <div class="kpi-card-value">${{ "%.2f"|format(total_revenue) }}</div>
+        <div class="kpi-card-trend {{ 'positive' if percent_change > 0 else 'negative' }}">
+            {{ '%+.1f'|format(percent_change) }}% from last month
+        </div>
     </div>
     
     <div class="kpi-card">

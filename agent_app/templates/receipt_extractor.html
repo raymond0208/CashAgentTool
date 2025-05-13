@@ -1,0 +1,150 @@
+{% extends 'layout.html' %}
+
+{% block title %}Receipt Extractor{% endblock %}
+
+{% block content %}
+<div class="receipt-extractor-container">
+    <div class="dashboard-header">
+        <h1>Receipt Extractor</h1>
+        <p class="text-muted">Upload receipts to extract and analyze expense data</p>
+    </div>
+
+    <div class="card mb-4" id="receipt-uploader">
+        <!-- View 1: Landing Page -->
+        <div class="card-body text-center py-5" id="landing-view">
+            <div class="upload-area">
+                <div class="upload-icon mb-3">
+                    <i class="bi bi-cloud-arrow-up" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="mb-3">Upload Receipt</h3>
+                <p class="text-muted mb-4">Upload an image of your receipt to automatically extract the details</p>
+                
+                <div class="mb-3">
+                    <button class="btn btn-primary btn-lg" id="choose-file-btn">Choose file to Upload</button>
+                </div>
+                <p class="text-muted mb-0">or</p>
+                <p class="text-muted">drag and drop file here</p>
+                <p class="small text-muted">Supported formats: .jpg, .jpeg, .png</p>
+            </div>
+            
+            <!-- Hidden file input -->
+            <input type="file" id="receipt-file-input" accept=".jpg,.jpeg,.png" style="display: none;">
+        </div>
+
+        <!-- View 2: Selected File Preview -->
+        <div class="card-body py-4" id="preview-view" style="display: none;">
+            <div class="row align-items-center">
+                <div class="col-md-8 mx-auto">
+                    <div class="selected-file p-3 border rounded mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="file-icon me-3">
+                                <i class="bi bi-file-earmark-image" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="file-info flex-grow-1">
+                                <h5 class="file-name mb-0" id="selected-filename">receipt-img.png</h5>
+                                <p class="text-muted mb-0 small">
+                                    <span id="selected-fileinfo">Uploaded by User, Uploaded on January 1, 2023 at 11:14</span>
+                                    <button class="btn btn-sm text-danger p-0 ms-2" id="remove-file-btn">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-lg" id="extract-btn">Extract Receipt Contents</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 3: Extracting Progress -->
+        <div class="card-body py-5 text-center" id="loading-view" style="display: none;">
+            <h3 class="mb-4">Extracting receipt contents...</h3>
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+            </div>
+            <p class="text-muted">This may take a few moments</p>
+        </div>
+
+        <!-- View 4: Extraction Results -->
+        <div class="card-body" id="results-view" style="display: none;">
+            <div class="row">
+                <div class="col-md-5 mb-4 mb-md-0">
+                    <div class="receipt-image-container border rounded p-3 text-center">
+                        <h5 class="mb-3">Receipt Image</h5>
+                        <img id="receipt-image-result" src="" alt="Receipt" class="img-fluid receipt-image border">
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="receipt-details-container p-3">
+                        <h5 class="mb-3">Extracted Details</h5>
+                        <div class="receipt-details overflow-auto" style="max-height: 500px;">
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Vendor Name</strong></p>
+                                <p id="vendor-name"></p>
+                            </div>
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Date</strong></p>
+                                <p id="receipt-date"></p>
+                            </div>
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Currency</strong></p>
+                                <p id="receipt-currency"></p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Items</strong></p>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th class="text-end">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="receipt-items">
+                                            <!-- Receipt items will be inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <p class="mb-1"><strong>GST/Tax</strong></p>
+                                </div>
+                                <div class="col text-end" id="receipt-tax"></div>
+                            </div>
+                            
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <p class="mb-1"><strong>Total</strong></p>
+                                </div>
+                                <div class="col text-end" id="receipt-total"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button class="btn btn-primary" id="start-over-btn">Process Another Receipt</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="card-body py-4 text-center" id="error-view" style="display: none;">
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span id="error-message">Error processing receipt</span>
+            </div>
+            <button class="btn btn-primary mt-3" id="error-retry-btn">Try Again</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- No additional scripts needed here as init is handled in script.js -->
+{% endblock %} 

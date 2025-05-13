@@ -4,6 +4,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle forecast generation if on the forecast page
     initForecastPage();
+    
+    // Initialize receipt extractor if on the receipt extractor page
+    if (document.getElementById('receipt-uploader')) {
+        // Only initialize once
+        if (!window.receiptExtractorInitialized) {
+            initReceiptExtractor();
+            window.receiptExtractorInitialized = true;
+        }
+    }
 });
 
 // Initialize dashboard charts
@@ -340,4 +349,244 @@ async function generateAllForecasts() {
         // Hide loading indicator
         loadingElement.classList.add('d-none');
     }
+}
+
+// Initialize receipt extractor functionality
+function initReceiptExtractor() {
+    // Elements
+    const landingView = document.getElementById('landing-view');
+    const previewView = document.getElementById('preview-view');
+    const loadingView = document.getElementById('loading-view');
+    const resultsView = document.getElementById('results-view');
+    const errorView = document.getElementById('error-view');
+    
+    const chooseFileBtn = document.getElementById('choose-file-btn');
+    const fileInput = document.getElementById('receipt-file-input');
+    const removeFileBtn = document.getElementById('remove-file-btn');
+    const extractBtn = document.getElementById('extract-btn');
+    const startOverBtn = document.getElementById('start-over-btn');
+    const errorRetryBtn = document.getElementById('error-retry-btn');
+    
+    const selectedFilename = document.getElementById('selected-filename');
+    const selectedFileInfo = document.getElementById('selected-fileinfo');
+    
+    // Selected file storage
+    let selectedFile = null;
+    
+    // Show a specific view and hide others
+    function showView(viewElement) {
+        // Hide all views
+        landingView.style.display = 'none';
+        previewView.style.display = 'none';
+        loadingView.style.display = 'none';
+        resultsView.style.display = 'none';
+        errorView.style.display = 'none';
+        
+        // Show the specified view
+        if (viewElement) {
+            viewElement.style.display = 'block';
+        }
+    }
+    
+    // File selection via button
+    chooseFileBtn.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        handleFileSelection(e.target.files[0]);
+    });
+    
+    // Handle file selection
+    function handleFileSelection(file) {
+        if (!file) return;
+        
+        // Check file type
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (!['jpg', 'jpeg', 'png'].includes(fileExtension)) {
+            document.getElementById('error-message').textContent = 'Invalid file type. Only JPG, JPEG, and PNG files are allowed.';
+            showView(errorView);
+            return;
+        }
+        
+        // Store selected file
+        selectedFile = file;
+        
+        // Update preview information
+        selectedFilename.textContent = file.name;
+        
+        // Format file info with current date and time
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString();
+        const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        selectedFileInfo.textContent = `Uploaded by User, Uploaded on ${formattedDate} at ${formattedTime}`;
+        
+        // Show preview view
+        showView(previewView);
+    }
+    
+    // Drag and drop functionality
+    const uploadArea = landingView.querySelector('.upload-area');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        uploadArea.classList.add('border', 'border-primary');
+    }
+    
+    function unhighlight() {
+        uploadArea.classList.remove('border', 'border-primary');
+    }
+    
+    uploadArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        // Prevent default behavior and stop propagation
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleFileSelection(file);
+    }
+    
+    // Remove selected file
+    removeFileBtn.addEventListener('click', function() {
+        selectedFile = null;
+        fileInput.value = '';
+        showView(landingView);
+    });
+    
+    // Extract receipt contents
+    extractBtn.addEventListener('click', function(e) {
+        // Prevent any default action or event bubbling
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!selectedFile) return;
+        
+        // Show loading view
+        showView(loadingView);
+        
+        // Create form data for upload
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        // Call API to extract receipt details
+        fetch('/api/extract-receipt-details', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayExtractionResults(data.data);
+            } else {
+                throw new Error(data.message || 'Error processing receipt');
+            }
+        })
+        .catch(error => {
+            document.getElementById('error-message').textContent = error.message;
+            showView(errorView);
+        });
+    });
+    
+    // Display extraction results
+    function displayExtractionResults(data) {
+        try {
+            // Ensure data has all required fields with defaults
+            data = {
+                image_url: data.image_url || '',
+                vendor_name: data.vendor_name || 'Unknown Vendor',
+                date: data.date || '',
+                currency: data.currency || 'USD',
+                receipt_items: Array.isArray(data.receipt_items) ? data.receipt_items : [],
+                tax: typeof data.tax === 'number' ? data.tax : 0,
+                total: typeof data.total === 'number' ? data.total : 0
+            };
+            
+            // Set receipt image
+            document.getElementById('receipt-image-result').src = data.image_url;
+            
+            // Set receipt details
+            document.getElementById('vendor-name').textContent = data.vendor_name;
+            document.getElementById('receipt-date').textContent = formatDate(data.date);
+            document.getElementById('receipt-currency').textContent = data.currency;
+            
+            // Set receipt items
+            const itemsContainer = document.getElementById('receipt-items');
+            itemsContainer.innerHTML = '';
+            
+            if (data.receipt_items.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="2" class="text-center">No items found</td>';
+                itemsContainer.appendChild(row);
+            } else {
+                data.receipt_items.forEach(item => {
+                    const itemName = item.item_name || 'Unnamed Item';
+                    const itemCost = typeof item.item_cost === 'number' ? item.item_cost : 0;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${itemName}</td>
+                        <td class="text-end">$${itemCost.toFixed(2)}</td>
+                    `;
+                    itemsContainer.appendChild(row);
+                });
+            }
+            
+            // Set tax and total
+            document.getElementById('receipt-tax').textContent = `$${data.tax.toFixed(2)}`;
+            document.getElementById('receipt-total').textContent = `$${data.total.toFixed(2)}`;
+            
+            // Show results view
+            showView(resultsView);
+        } catch (error) {
+            console.error('Error displaying extraction results:', error);
+            document.getElementById('error-message').textContent = 'Error displaying extraction results';
+            showView(errorView);
+        }
+    }
+    
+    // Format date from YYYY-MM-DD to readable format
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        try {
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString(undefined, options);
+        } catch (e) {
+            return dateString;
+        }
+    }
+    
+    // Start over button
+    startOverBtn.addEventListener('click', function() {
+        selectedFile = null;
+        fileInput.value = '';
+        showView(landingView);
+    });
+    
+    // Error retry button
+    errorRetryBtn.addEventListener('click', function() {
+        showView(landingView);
+    });
 } 

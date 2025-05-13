@@ -252,4 +252,44 @@ body {
     font-size: 0.9rem;
     max-height: 500px;
     overflow-y: auto;
+}
+
+/* Receipt Extractor styles */
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 3rem 2rem;
+    transition: all 0.2s;
+    background-color: #f8f9fa;
+}
+
+.upload-area:hover, .upload-area.border-primary {
+    border-color: var(--primary-color);
+    background-color: #e7f1ff;
+}
+
+.selected-file {
+    background-color: #f8f9fa;
+}
+
+.receipt-image {
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.receipt-details-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    height: 100%;
+}
+
+#receipt-items td:last-child {
+    width: 120px;
+}
+
+/* Make scrollable areas better on mobile */
+@media (max-width: 768px) {
+    .receipt-details {
+        max-height: 300px;
+    }
 } 
