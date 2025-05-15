@@ -5,14 +5,22 @@ import uuid
 import base64
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 from .models import Transaction, InitialBalance, ReceiptDetail, ReceiptItem, db
+
+# Load environment variables from .env file
+load_dotenv()
 
 class FinancialAnalysis:
     """Base class for all financial analysis agent functions"""
 
     def __init__(self, user_id, api_key=None): #Initialize the basic settings of LLM services
         self.user_id = user_id
-        self.api_key = "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" or os.environ.get("ANTHROPIC_API_KEY")
+        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        
+        if not self.api_key:
+            print("Warning: ANTHROPIC_API_KEY not found in environment variables or provided as parameter")
+            
         self.tools = {
             "get_transactions": self.get_transactions,
             "get_balance": self.get_balance,
@@ -354,7 +362,11 @@ class ReceiptExtraction:
     
     def __init__(self, user_id=1):
         self.user_id = user_id
-        self.api_key = "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" or os.environ.get("ANTHROPIC_API_KEY")
+        self.api_key = os.environ.get("ANTHROPIC_API_KEY")
+        
+        if not self.api_key:
+            print("Warning: ANTHROPIC_API_KEY not found in environment variables. Receipt extraction may fail.")
+            
         self.model = "claude-3-opus-20240229"
         self.client = anthropic.Anthropic(api_key=self.api_key)
         self.allowed_extensions = {'jpg', 'jpeg', 'png'}
@@ -375,8 +387,12 @@ class ReceiptExtraction:
             return {"status": "error", "message": "Invalid file type. Only JPG, JPEG, and PNG files are allowed."}
         
         try:
+            # Log file information for debugging
+            print(f"Processing file: {image_file.filename}, Content type: {image_file.content_type}")
+            
             # Save the image file
             file_path, image_url = self._save_image(image_file)
+            print(f"Saved to: {file_path}")
             
             # Convert image to base64 for the AI model
             with open(file_path, "rb") as img_file:
@@ -479,6 +495,13 @@ class ReceiptExtraction:
     # Add this method to your ReceiptExtraction class in services.py
     def _call_ai_model(self, file_path, base64_image):
         """Call the AI model with the image"""
+        # Determine media type from file extension
+        media_type = "image/jpeg"  # Default
+        if file_path.lower().endswith('.png'):
+            media_type = "image/png"
+        elif file_path.lower().endswith('.jpg') or file_path.lower().endswith('.jpeg'):
+            media_type = "image/jpeg"
+            
         # Create prompt for AI extraction
         prompt = """
         You are an expert receipt scanner. I'll provide you with an image of a receipt.
@@ -535,7 +558,7 @@ class ReceiptExtraction:
                             "type": "image",
                             "source": {
                                 "type": "base64",
-                                "media_type": "image/jpeg",
+                                "media_type": media_type,
                                 "data": base64_image
                             }
                         }
